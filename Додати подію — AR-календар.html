@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Додати подію</title>
+<style>
+  :root {
+    --bg: #F6FAFF;
+    --card: #FFFFFF;
+    --text: #173B64;
+    --text-muted: #5C7699;
+    --accent: #A3C4EB;
+    --accent-strong: #173B64;
+    --warn: #FFDE70;
+    --border: #E1EAF5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1B2E;
+      --card: #16263F;
+      --text: #EAF1FB;
+      --text-muted: #9FB3CC;
+      --accent: #2E4A73;
+      --accent-strong: #A3C4EB;
+      --warn: #FFDE70;
+      --border: #223350;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1B2E;
+    --card: #16263F;
+    --text: #EAF1FB;
+    --text-muted: #9FB3CC;
+    --accent: #2E4A73;
+    --accent-strong: #A3C4EB;
+    --warn: #FFDE70;
+    --border: #223350;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    background: var(--bg);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 22px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 30px rgba(23,59,100,0.08);
+  }
+  .icon {
+    font-size: 40px;
+    margin-bottom: 6px;
+  }
+  h1 {
+    color: var(--text);
+    font-size: 20px;
+    margin: 0 0 6px;
+  }
+  p.sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 0 24px;
+    line-height: 1.4;
+  }
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px 18px;
+    border-radius: 14px;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 12px;
+    text-decoration: none;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-google {
+    background: var(--accent-strong);
+    color: #fff;
+  }
+  .btn-apple {
+    background: var(--card);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+  .btn-google:hover, .btn-apple:hover { opacity: 0.92; }
+  .hint {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .badge {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--warn);
+    color: #4A3B00;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📅</div>
+    <h1>Додати подію в календар</h1>
+    <p class="sub">Оберіть, куди зберегти нагадування. Дату, час і назву ви впишете самостійно.</p>
+
+    <a class="btn btn-google" href="https://calendar.google.com/calendar/render?action=TEMPLATE" target="_blank" rel="noopener">
+      📆 Google Calendar
+    </a>
+
+    <a class="btn btn-apple" id="appleBtn" href="#">
+      🍎 Apple Calendar (.ics)
+    </a>
+
+    <div class="badge" id="platformBadge"></div>
+    <div class="hint">Сторінку відкрито з друкованого AR-календаря ХНЕУ ім. С. Кузнеця</div>
+  </div>
+
+<script>
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function buildIcs() {
+    var d = new Date();
+    var y = d.getFullYear(), m = pad(d.getMonth() + 1), day = pad(d.getDate());
+    var dateStr = y + m + day;
+    var uid = 'arcal-' + Date.now() + '@antonov-calendar';
+    var ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//AR Calendar//UA',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      'UID:' + uid,
+      'DTSTAMP:' + dateStr + 'T000000Z',
+      'DTSTART;VALUE=DATE:' + dateStr,
+      'DTEND;VALUE=DATE:' + dateStr,
+      'SUMMARY:Нова подія',
+      'DESCRIPTION:Створено з AR-календаря. Відредагуйте назву й дату.',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  }
+
+  try {
+    var appleBtn = document.getElementById('appleBtn');
+    appleBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var link = document.createElement('a');
+      link.href = buildIcs();
+      link.download = 'nova-podiya.ics';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/i.test(ua);
+    var badge = document.getElementById('platformBadge');
+    if (isIOS) {
+      badge.textContent = 'Рекомендовано: Apple Calendar';
+    } else {
+      badge.textContent = 'Рекомендовано: Google Calendar';
+    }
+  } catch (err) {
+    console.error(err);
+  }
+</script>
+</body>
+</html>
