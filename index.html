@@ -38,10 +38,7 @@
     --border: #223350;
   }
   * { box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    margin: 0;
-  }
+  html, body { height: 100%; margin: 0; }
   body {
     background: var(--bg);
     font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -62,21 +59,9 @@
     text-align: center;
     box-shadow: 0 8px 30px rgba(23,59,100,0.08);
   }
-  .icon {
-    font-size: 40px;
-    margin-bottom: 6px;
-  }
-  h1 {
-    color: var(--text);
-    font-size: 20px;
-    margin: 0 0 6px;
-  }
-  p.sub {
-    color: var(--text-muted);
-    font-size: 14px;
-    margin: 0 0 24px;
-    line-height: 1.4;
-  }
+  .icon { font-size: 40px; margin-bottom: 6px; }
+  h1 { color: var(--text); font-size: 20px; margin: 0 0 6px; }
+  p.sub { color: var(--text-muted); font-size: 14px; margin: 0 0 24px; line-height: 1.4; }
   .btn {
     display: flex;
     align-items: center;
@@ -91,104 +76,170 @@
     cursor: pointer;
     margin-bottom: 12px;
     text-decoration: none;
+    font-family: inherit;
     transition: transform 0.15s ease, opacity 0.15s ease;
   }
   .btn:active { transform: scale(0.97); }
-  .btn-google {
-    background: var(--accent-strong);
-    color: #fff;
+  .btn:hover { opacity: 0.92; }
+  .btn-main { background: var(--accent-strong); color: #fff; }
+  .btn-light { background: var(--card); color: var(--text); border: 1.5px solid var(--border); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .btn-main { color: #0F1B2E; }
   }
-  .btn-apple {
-    background: var(--card);
+  :root[data-theme="dark"] .btn-main { color: #0F1B2E; }
+  #status { color: var(--text-muted); font-size: 14px; margin: 4px 0 14px; min-height: 18px; }
+  #status.err { color: #C0392B; }
+  #result { display: none; text-align: left; margin-top: 8px; }
+  #result .ev {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
     color: var(--text);
-    border: 1.5px solid var(--border);
+    font-size: 14px;
+    line-height: 1.5;
   }
-  .btn-google:hover, .btn-apple:hover { opacity: 0.92; }
-  .hint {
-    margin-top: 18px;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .badge {
-    display: inline-block;
-    margin-top: 14px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: var(--warn);
-    color: #4A3B00;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
+  #result .ev b { font-size: 16px; display: block; margin-bottom: 4px; }
+  .hint { margin-top: 18px; font-size: 12px; color: var(--text-muted); }
 </style>
 </head>
 <body>
   <div class="card">
     <div class="icon">📅</div>
     <h1>Додати подію в календар</h1>
-    <p class="sub">Оберіть, куди зберегти нагадування. Дату, час і назву ви впишете самостійно.</p>
+    <p class="sub">Сфотографуйте запис у календарі, і подію буде розпізнано автоматично.</p>
 
-    <a class="btn btn-google" href="https://calendar.google.com/calendar/render?action=TEMPLATE" target="_blank" rel="noopener">
-      📆 Google Calendar
+    <input type="file" id="photo" accept="image/*" hidden>
+    <button class="btn btn-main" id="btn">📷 Додати подію з фото</button>
+    <div id="status"></div>
+
+    <div id="result">
+      <div class="ev" id="evBox"></div>
+      <a class="btn btn-main" id="gBtn" href="#" target="_blank" rel="noopener">📆 Додати в Google Calendar</a>
+    </div>
+
+    <a class="btn btn-light" href="https://calendar.google.com/calendar/render?action=TEMPLATE" target="_blank" rel="noopener">
+      ✍️ Додати вручну
     </a>
 
-    <a class="btn btn-apple" id="appleBtn" href="#">
-      🍎 Apple Calendar (.ics)
-    </a>
-
-    <div class="badge" id="platformBadge"></div>
     <div class="hint">Сторінку відкрито з друкованого AR-календаря ХНЕУ ім. С. Кузнеця</div>
   </div>
 
 <script>
-  function pad(n) { return String(n).padStart(2, '0'); }
+  var WORKER = "https://nameless-flower-6807.7401146.workers.dev";
+  var TZ = "Europe/Kyiv";
 
-  function buildIcs() {
-    var d = new Date();
-    var y = d.getFullYear(), m = pad(d.getMonth() + 1), day = pad(d.getDate());
-    var dateStr = y + m + day;
-    var uid = 'arcal-' + Date.now() + '@antonov-calendar';
-    var ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//AR Calendar//UA',
-      'CALSCALE:GREGORIAN',
-      'BEGIN:VEVENT',
-      'UID:' + uid,
-      'DTSTAMP:' + dateStr + 'T000000Z',
-      'DTSTART;VALUE=DATE:' + dateStr,
-      'DTEND;VALUE=DATE:' + dateStr,
-      'SUMMARY:Нова подія',
-      'DESCRIPTION:Створено з AR-календаря. Відредагуйте назву й дату.',
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].join('\r\n');
-    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  var photo = document.getElementById("photo");
+  var btn = document.getElementById("btn");
+  var statusEl = document.getElementById("status");
+  var result = document.getElementById("result");
+  var evBox = document.getElementById("evBox");
+  var gBtn = document.getElementById("gBtn");
+
+  btn.addEventListener("click", function () { photo.click(); });
+
+  function setStatus(text, isErr) {
+    statusEl.textContent = text;
+    statusEl.className = isErr ? "err" : "";
   }
 
-  try {
-    var appleBtn = document.getElementById('appleBtn');
-    appleBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      var link = document.createElement('a');
-      link.href = buildIcs();
-      link.download = 'nova-podiya.ics';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  // Стискає фото до 1500px, повертає чистий base64 JPEG
+  function toBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, 1500 / Math.max(img.width, img.height));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.width * k);
+        c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+      };
+      img.onerror = function () { reject(new Error("Не вдалося прочитати фото")); };
+      img.src = URL.createObjectURL(file);
     });
-
-    var ua = navigator.userAgent || '';
-    var isIOS = /iPhone|iPad|iPod/i.test(ua);
-    var badge = document.getElementById('platformBadge');
-    if (isIOS) {
-      badge.textContent = 'Рекомендовано: Apple Calendar';
-    } else {
-      badge.textContent = 'Рекомендовано: Google Calendar';
-    }
-  } catch (err) {
-    console.error(err);
   }
+
+  function p2(n) { return String(n).padStart(2, "0"); }
+
+  // Повертає "YYYYMMDD" або "YYYYMMDDTHHMM00" зі зсувом у хвилинах
+  function stamp(date, time, addMin) {
+    var d = date.split("-").map(Number);
+    var t = time ? time.split(":").map(Number) : [0, 0];
+    var dt = new Date(Date.UTC(d[0], d[1] - 1, d[2], t[0], t[1] + (addMin || 0)));
+    var day = dt.getUTCFullYear() + p2(dt.getUTCMonth() + 1) + p2(dt.getUTCDate());
+    if (!time) return day;
+    return day + "T" + p2(dt.getUTCHours()) + p2(dt.getUTCMinutes()) + "00";
+  }
+
+  function googleUrl(ev) {
+    var dates;
+    if (ev.start_time) {
+      var s = stamp(ev.date, ev.start_time, 0);
+      var e = ev.end_time ? stamp(ev.date, ev.end_time, 0) : stamp(ev.date, ev.start_time, 60);
+      if (e <= s) e = stamp(ev.date, ev.end_time, 1440); // подія через північ
+      dates = s + "/" + e;
+    } else {
+      // подія на весь день: кінець ексклюзивний
+      dates = stamp(ev.date, null, 0) + "/" + stamp(ev.date.replace(/-\d\d$/, function (m) { return m; }), null, 0);
+      var d = ev.date.split("-").map(Number);
+      var next = new Date(Date.UTC(d[0], d[1] - 1, d[2] + 1));
+      dates = stamp(ev.date, null, 0) + "/" +
+        next.getUTCFullYear() + p2(next.getUTCMonth() + 1) + p2(next.getUTCDate());
+    }
+    return "https://calendar.google.com/calendar/render?" + new URLSearchParams({
+      action: "TEMPLATE",
+      text: ev.title || "Подія",
+      dates: dates,
+      details: ev.description || "",
+      location: ev.location || "",
+      ctz: TZ
+    });
+  }
+
+  function show(ev) {
+    if (!ev.date || !/^\d{4}-\d{2}-\d{2}$/.test(ev.date)) {
+      throw new Error("Не вдалося визначити дату події. Спробуйте чіткіше фото.");
+    }
+    evBox.textContent = "";
+    var title = document.createElement("b");
+    title.textContent = ev.title || "Подія";
+    evBox.appendChild(title);
+    var when = ev.date + (ev.start_time ? " " + ev.start_time : "") + (ev.end_time ? "–" + ev.end_time : "");
+    evBox.appendChild(document.createTextNode(when));
+    if (ev.location) {
+      evBox.appendChild(document.createElement("br"));
+      evBox.appendChild(document.createTextNode("📍 " + ev.location));
+    }
+    if (ev.description) {
+      evBox.appendChild(document.createElement("br"));
+      evBox.appendChild(document.createTextNode(ev.description));
+    }
+    gBtn.href = googleUrl(ev);
+    result.style.display = "block";
+  }
+
+  photo.addEventListener("change", async function () {
+    if (!photo.files[0]) return;
+    result.style.display = "none";
+    setStatus("Розпізнаю…", false);
+    try {
+      var b64 = await toBase64(photo.files[0]);
+      var r = await fetch(WORKER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: b64 })
+      });
+      var ev = await r.json();
+      if (ev.error) throw new Error(ev.error);
+      show(ev);
+      setStatus("Готово! Перевірте дані та збережіть подію.", false);
+    } catch (err) {
+      setStatus("Помилка: " + err.message, true);
+    }
+    photo.value = "";
+  });
 </script>
 </body>
 </html>
