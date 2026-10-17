@@ -74,7 +74,7 @@
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    margin-bottom: 12px;
+    margin-bottom: 8px; /* Зменшено відступ між кнопками */
     text-decoration: none;
     font-family: inherit;
     transition: transform 0.15s ease, opacity 0.15s ease;
@@ -101,7 +101,6 @@
     line-height: 1.5;
   }
   #result .ev b { font-size: 16px; display: block; margin-bottom: 4px; }
-  .hint { margin-top: 18px; font-size: 12px; color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -122,8 +121,6 @@
     <a class="btn btn-light" href="https://calendar.google.com/calendar/render?action=TEMPLATE" target="_blank" rel="noopener">
       ✍️ Додати вручну
     </a>
-
-    <div class="hint">Сторінку відкрито з друкованого AR-календаря</div>
   </div>
 
 <script>
@@ -182,7 +179,6 @@
       dates = s + "/" + e;
     } else {
       // подія на весь день: кінець ексклюзивний
-      dates = stamp(ev.date, null, 0) + "/" + stamp(ev.date.replace(/-\d\d$/, function (m) { return m; }), null, 0);
       var d = ev.date.split("-").map(Number);
       var next = new Date(Date.UTC(d[0], d[1] - 1, d[2] + 1));
       dates = stamp(ev.date, null, 0) + "/" +
